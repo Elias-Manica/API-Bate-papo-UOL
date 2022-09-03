@@ -98,9 +98,11 @@ app.get("/participants", async (req, res) => {
 
 app.post("/messages", async (req, res) => {
   const User = req.headers;
+  console.log(User.user);
 
   if (!User.user) {
     res.status(422).send({ error: "Header necessário" });
+    return;
   }
 
   const validation = messageSchema.validate(req.body, { abortEarly: false });
@@ -139,9 +141,38 @@ app.post("/messages", async (req, res) => {
 });
 
 app.get("/messages", async (req, res) => {
+  const User = req.headers;
+
+  if (!User.user) {
+    res.status(422).send({ error: "Header necessário" });
+    return;
+  }
   try {
-    const response = await db.collection("messagesUOL").find().toArray();
-    res.send(response);
+    const listUsers = await db.collection("participantsUOL").find().toArray();
+    let findName = false;
+    listUsers.forEach((value) => {
+      if (value.name === User.user) {
+        findName = true;
+      }
+    });
+    if (findName) {
+      const response = await db.collection("messagesUOL").find().toArray();
+      let responseFilter = response.filter((value) => {
+        if (
+          value.to === "Todos" ||
+          value.from === User.user ||
+          value.to === User.user
+        ) {
+          return value;
+        }
+        return false;
+      });
+      console.log(responseFilter);
+      res.send(responseFilter);
+      return;
+    } else {
+      res.status(409).send({ error: "Usuário não logado" });
+    }
   } catch (error) {
     res.sendStatus(500);
   }
