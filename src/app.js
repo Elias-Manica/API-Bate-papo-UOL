@@ -183,6 +183,40 @@ app.get("/messages", async (req, res) => {
   }
 });
 
+app.post("/status", async (req, res) => {
+  const User = req.headers;
+  const nameUser = User.user;
+
+  if (!nameUser) {
+    res.status(422).send({ error: "Header necessário" });
+    return;
+  }
+  try {
+    const listUsers = await db.collection("participantsUOL").find().toArray();
+    let findName = false;
+    let userDataId = "";
+    listUsers.forEach((value) => {
+      if (value.name === nameUser) {
+        findName = true;
+        userDataId = value._id;
+      }
+    });
+    if (findName) {
+      const response = await db
+        .collection("participantsUOL")
+        .updateOne({ _id: userDataId }, { $set: { lastStatus: Date.now() } });
+      res.sendStatus(200);
+      return;
+    } else {
+      res.sendStatus(404);
+      return;
+    }
+  } catch (error) {
+    res.sendStatus(500);
+    return;
+  }
+});
+
 app.listen(5000, () => {
   console.log("Server is listening on port 5000");
 });
