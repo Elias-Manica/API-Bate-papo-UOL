@@ -142,6 +142,7 @@ app.post("/messages", async (req, res) => {
 
 app.get("/messages", async (req, res) => {
   const User = req.headers;
+  const { limit } = req.query;
 
   if (!User.user) {
     res.status(422).send({ error: "Header necessário" });
@@ -167,9 +168,13 @@ app.get("/messages", async (req, res) => {
         }
         return false;
       });
-      console.log(responseFilter);
-      res.send(responseFilter);
-      return;
+      if (!limit) {
+        res.send(responseFilter.reverse());
+        return;
+      } else {
+        res.send(responseFilter.reverse().splice(0, limit));
+        return;
+      }
     } else {
       res.status(409).send({ error: "Usuário não logado" });
     }
