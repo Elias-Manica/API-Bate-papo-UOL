@@ -18,7 +18,29 @@ mongoClient.connect().then(() => {
 });
 
 const nameSchema = joi.object({
-  name: joi.string().required().alphanum(),
+  name: joi
+    .string()
+    .required()
+    .regex(/[a-zA-Z0-9]/)
+    .alphanum(),
+});
+
+const messageSchema = joi.object({
+  to: joi
+    .string()
+    .required()
+    .empty("")
+    .regex(/[a-zA-Z0-9]/),
+  text: joi
+    .string()
+    .required()
+    .empty("")
+    .regex(/[a-zA-Z0-9]/),
+  type: joi
+    .string()
+    .required()
+    .empty("")
+    .regex(/[a-zA-Z0-9]/),
 });
 
 app.post("/participants", async (req, res) => {
@@ -72,12 +94,45 @@ app.get("/participants", async (req, res) => {
   }
 });
 
+//LEMBRAR DE TRANSFORMAR OS CARACTERES ESPECIAIS DO USER EM STR
+
 app.post("/messages", async (req, res) => {
-  const { name } = req.body;
-  const body = { name: name, lastStatus: Date.now() };
+  const User = req.headers;
+
+  if (!User.user) {
+    res.status(422).send({ error: "Header necessário" });
+  }
+
+  const validation = messageSchema.validate(req.body, { abortEarly: false });
+
+  if (validation.error) {
+    const errors = validation.error.details.map((detail) => detail.message);
+    res.status(422).send(errors);
+    return;
+  }
+
   try {
-    const response = await db.collection("messagesUOL").insertOne(body);
-    res.sendStatus(201);
+    const listUsers = await db.collection("participantsUOL").find().toArray();
+    let findName = false;
+    listUsers.forEach((value) => {
+      if (value.name === User.user) {
+        findName = true;
+      }
+    });
+    if (findName) {
+      const body = {
+        from: `${User.user}`,
+        to: `${req.body.to}`,
+        text: `${req.body.text}`,
+        type: `${req.body.type}`,
+        time: `${dayjs(Date.now()).format("HH:mm:ss")}`,
+      };
+      const response = await db.collection("messagesUOL").insertOne(body);
+      res.sendStatus(201);
+      return;
+    } else {
+      res.status(409).send({ error: "Usuário não logado" });
+    }
   } catch (error) {
     res.sendStatus(500);
   }
