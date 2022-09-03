@@ -239,6 +239,16 @@ setInterval(async () => {
         const response = db
           .collection("participantsUOL")
           .deleteOne({ _id: value._id });
+        const bodyMessage = {
+          from: value.name,
+          to: "Todos",
+          text: "sai da sala...",
+          type: "status",
+          time: `${dayjs(Date.now()).format("HH:mm:ss")}`,
+        };
+        const responseMessage = db
+          .collection("messagesUOL")
+          .insertOne(bodyMessage);
         console.log(value.name, "excluido");
       }
     });
