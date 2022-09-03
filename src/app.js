@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import joi from "joi";
+import dayjs from "dayjs";
 
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
@@ -17,32 +18,12 @@ mongoClient.connect().then(() => {
 });
 
 const nameSchema = joi.object({
-  name: joi.string().required(),
+  name: joi.string().required().alphanum(),
 });
 
 app.post("/participants", async (req, res) => {
   const { name } = req.body;
   const validation = nameSchema.validate(req.body, { abortEarly: false });
-
-  //VALIDAR SE O NOME JÁ TA PRESENTE
-
-  //   let listName = [];
-
-  //   db.collection("participantsUOL")
-  //     .find()
-  //     .toArray()
-  //     .then((value) => {
-  //       listName = value;
-  //     });
-
-  //   const findName = listName.find((value) => {
-  //     value.name === name;
-  //   });
-
-  //   if (findName) {
-  //     res.sendStatus(409);
-  //     return;
-  //   }
 
   if (validation.error) {
     const errors = validation.error.details.map((detail) => detail.message);
@@ -51,6 +32,13 @@ app.post("/participants", async (req, res) => {
   }
 
   const body = { name: name, lastStatus: Date.now() };
+  const bodyMessage = {
+    from: name,
+    to: "Todos",
+    text: "entra na sala...",
+    type: "status",
+    time: `${dayjs(Date.now()).format("HH:mm:ss")}`,
+  };
   try {
     const listUsers = await db.collection("participantsUOL").find().toArray();
     let findName = false;
@@ -60,12 +48,13 @@ app.post("/participants", async (req, res) => {
       }
     });
     if (findName) {
-      console.log("tem repetido");
       res.sendStatus(409);
       return;
     } else {
       const response = await db.collection("participantsUOL").insertOne(body);
-
+      const responseMessage = await db
+        .collection("messagesUOL")
+        .insertOne(bodyMessage);
       res.sendStatus(201);
       return;
     }
