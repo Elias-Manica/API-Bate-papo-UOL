@@ -43,6 +43,20 @@ const messageSchema = joi.object({
     .regex(/[a-zA-Z0-9]/),
 });
 
+async function removeInative() {
+  try {
+    const listUsers = await db.collection("participantsUOL").find().toArray();
+    listUsers.forEach((value) => {
+      // if (Date.now() - value.lastStatus > 10) {
+      //   console.log(value.name, "está inativo há", Date.now() - value.lastStatus);
+      // }
+      console.log(value);
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 app.post("/participants", async (req, res) => {
   const { name } = req.body;
   const validation = nameSchema.validate(req.body, { abortEarly: false });
@@ -216,6 +230,22 @@ app.post("/status", async (req, res) => {
     return;
   }
 });
+
+setInterval(async () => {
+  try {
+    const listUsers = await db.collection("participantsUOL").find().toArray();
+    listUsers.forEach((value) => {
+      if (Date.now() - value.lastStatus > 10000) {
+        const response = db
+          .collection("participantsUOL")
+          .deleteOne({ _id: value._id });
+        console.log(value.name, "excluido");
+      }
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}, 15000);
 
 app.listen(5000, () => {
   console.log("Server is listening on port 5000");
