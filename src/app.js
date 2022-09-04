@@ -3,7 +3,7 @@ import cors from "cors";
 import joi from "joi";
 import dayjs from "dayjs";
 
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -202,6 +202,38 @@ app.post("/status", async (req, res) => {
     res.sendStatus(500);
     return;
   }
+});
+
+app.delete("/messages/:ID_DA_MENSAGEM", async (req, res) => {
+  const User = req.headers;
+  const UserlessCaracter = decodeURIComponent(escape(User.user));
+
+  const { ID_DA_MENSAGEM } = req.params;
+  const strID = ID_DA_MENSAGEM.toString();
+
+  try {
+    let findMessage = await db
+      .collection("messagesUOL")
+      .findOne({ _id: ObjectId(strID) });
+    console.log(findMessage);
+    if (findMessage) {
+      if (findMessage.from === UserlessCaracter) {
+        const response = await db
+          .collection("messagesUOL")
+          .deleteOne({ _id: ObjectId(strID) });
+        res.status(200).send({ message: "mensagem deletada" });
+      } else {
+        res.sendStatus(401);
+      }
+    } else {
+      res.sendStatus(404);
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Id da mensagem inválido" }).status(404);
+  }
+
+  console.log(strID);
 });
 
 setInterval(async () => {
