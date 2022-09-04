@@ -39,7 +39,8 @@ const messageSchema = joi.object({
     .string()
     .required()
     .empty("")
-    .regex(/[a-zA-Z0-9]/),
+    .regex(/[a-zA-Z0-9]/)
+    .valid("message", "private_message"),
 });
 
 app.post("/participants", async (req, res) => {
@@ -232,8 +233,49 @@ app.delete("/messages/:ID_DA_MENSAGEM", async (req, res) => {
     console.log(error);
     res.send({ error: "Id da mensagem inválido" }).status(404);
   }
+});
 
-  console.log(strID);
+app.put("/messages/:ID_DA_MENSAGEM", async (req, res) => {
+  const User = req.headers;
+  const UserlessCaracter = decodeURIComponent(escape(User.user));
+  //TRANSFORMA OS CARACTERES ESPECIAIS DO USER EM STR
+
+  const { ID_DA_MENSAGEM } = req.params;
+  const strID = ID_DA_MENSAGEM.toString();
+
+  if (!UserlessCaracter) {
+    res.status(422).send({ error: "Header necessário" });
+    return;
+  }
+
+  const validation = messageSchema.validate(req.body, { abortEarly: false });
+
+  if (validation.error) {
+    const errors = validation.error.details.map((detail) => detail.message);
+    res.status(422).send(errors);
+    return;
+  }
+
+  try {
+    let findMessage = await db
+      .collection("messagesUOL")
+      .findOne({ _id: ObjectId(strID) });
+    if (findMessage) {
+      if (findMessage.from === UserlessCaracter) {
+        const response = await db
+          .collection("messagesUOL")
+          .updateOne({ _id: ObjectId(strID) }, { $set: req.body });
+        res.status(200).send({ message: "mensagem modificada" });
+      } else {
+        res.sendStatus(401);
+      }
+    } else {
+      res.sendStatus(404);
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Id da mensagem inválido" }).status(404);
+  }
 });
 
 setInterval(async () => {
