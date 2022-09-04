@@ -42,20 +42,6 @@ const messageSchema = joi.object({
     .regex(/[a-zA-Z0-9]/),
 });
 
-async function removeInative() {
-  try {
-    const listUsers = await db.collection("participantsUOL").find().toArray();
-    listUsers.forEach((value) => {
-      // if (Date.now() - value.lastStatus > 10) {
-      //   console.log(value.name, "está inativo há", Date.now() - value.lastStatus);
-      // }
-      console.log(value);
-    });
-  } catch (error) {
-    console.log(error);
-  }
-}
-
 app.post("/participants", async (req, res) => {
   const { name } = req.body;
   const validation = nameSchema.validate(req.body, { abortEarly: false });
@@ -75,13 +61,9 @@ app.post("/participants", async (req, res) => {
     time: `${dayjs(Date.now()).format("HH:mm:ss")}`,
   };
   try {
-    const listUsers = await db.collection("participantsUOL").find().toArray();
-    let findName = false;
-    listUsers.forEach((value) => {
-      if (value.name === name) {
-        findName = true;
-      }
-    });
+    let findName = await db
+      .collection("participantsUOL")
+      .findOne({ name: name });
     if (findName) {
       res.sendStatus(409);
       return;
@@ -126,13 +108,9 @@ app.post("/messages", async (req, res) => {
   }
 
   try {
-    const listUsers = await db.collection("participantsUOL").find().toArray();
-    let findName = false;
-    listUsers.forEach((value) => {
-      if (value.name === UserlessCaracter) {
-        findName = true;
-      }
-    });
+    let findName = await db
+      .collection("participantsUOL")
+      .findOne({ name: UserlessCaracter });
     if (findName) {
       const body = {
         from: `${UserlessCaracter}`,
@@ -162,13 +140,9 @@ app.get("/messages", async (req, res) => {
     return;
   }
   try {
-    const listUsers = await db.collection("participantsUOL").find().toArray();
-    let findName = false;
-    listUsers.forEach((value) => {
-      if (value.name === UserlessCaracter) {
-        findName = true;
-      }
-    });
+    let findName = await db
+      .collection("participantsUOL")
+      .findOne({ name: UserlessCaracter });
     if (findName) {
       const response = await db.collection("messagesUOL").find().toArray();
       let responseFilter = response.filter((value) => {
@@ -230,8 +204,7 @@ app.post("/status", async (req, res) => {
   }
 });
 
-{
-  /*setInterval(async () => {
+setInterval(async () => {
   try {
     const listUsers = await db.collection("participantsUOL").find().toArray();
     listUsers.forEach((value) => {
@@ -254,8 +227,7 @@ app.post("/status", async (req, res) => {
   } catch (error) {
     console.log(error);
   }
-}, 15000);*/
-}
+}, 15000);
 
 app.listen(5000, () => {
   console.log("Server is listening on port 5000");
