@@ -21,8 +21,7 @@ const nameSchema = joi.object({
   name: joi
     .string()
     .required()
-    .regex(/[a-zA-Z0-9]/)
-    .alphanum(),
+    .regex(/[a-zA-Z0-9]/),
 });
 
 const messageSchema = joi.object({
@@ -108,13 +107,12 @@ app.get("/participants", async (req, res) => {
   }
 });
 
-//LEMBRAR DE TRANSFORMAR OS CARACTERES ESPECIAIS DO USER EM STR
-
 app.post("/messages", async (req, res) => {
   const User = req.headers;
-  console.log(User.user);
+  const UserlessCaracter = decodeURIComponent(escape(User.user));
+  //TRANSFORMA OS CARACTERES ESPECIAIS DO USER EM STR
 
-  if (!User.user) {
+  if (!UserlessCaracter) {
     res.status(422).send({ error: "Header necessário" });
     return;
   }
@@ -131,13 +129,13 @@ app.post("/messages", async (req, res) => {
     const listUsers = await db.collection("participantsUOL").find().toArray();
     let findName = false;
     listUsers.forEach((value) => {
-      if (value.name === User.user) {
+      if (value.name === UserlessCaracter) {
         findName = true;
       }
     });
     if (findName) {
       const body = {
-        from: `${User.user}`,
+        from: `${UserlessCaracter}`,
         to: `${req.body.to}`,
         text: `${req.body.text}`,
         type: `${req.body.type}`,
@@ -157,8 +155,9 @@ app.post("/messages", async (req, res) => {
 app.get("/messages", async (req, res) => {
   const User = req.headers;
   const { limit } = req.query;
+  const UserlessCaracter = decodeURIComponent(escape(User.user));
 
-  if (!User.user) {
+  if (!UserlessCaracter) {
     res.status(422).send({ error: "Header necessário" });
     return;
   }
@@ -166,7 +165,7 @@ app.get("/messages", async (req, res) => {
     const listUsers = await db.collection("participantsUOL").find().toArray();
     let findName = false;
     listUsers.forEach((value) => {
-      if (value.name === User.user) {
+      if (value.name === UserlessCaracter) {
         findName = true;
       }
     });
@@ -175,8 +174,8 @@ app.get("/messages", async (req, res) => {
       let responseFilter = response.filter((value) => {
         if (
           value.to === "Todos" ||
-          value.from === User.user ||
-          value.to === User.user
+          value.from === UserlessCaracter ||
+          value.to === UserlessCaracter
         ) {
           return value;
         }
@@ -199,9 +198,9 @@ app.get("/messages", async (req, res) => {
 
 app.post("/status", async (req, res) => {
   const User = req.headers;
-  const nameUser = User.user;
+  const UserlessCaracter = decodeURIComponent(escape(User.user));
 
-  if (!nameUser) {
+  if (!UserlessCaracter) {
     res.status(422).send({ error: "Header necessário" });
     return;
   }
@@ -210,7 +209,7 @@ app.post("/status", async (req, res) => {
     let findName = false;
     let userDataId = "";
     listUsers.forEach((value) => {
-      if (value.name === nameUser) {
+      if (value.name === UserlessCaracter) {
         findName = true;
         userDataId = value._id;
       }
@@ -231,7 +230,8 @@ app.post("/status", async (req, res) => {
   }
 });
 
-setInterval(async () => {
+{
+  /*setInterval(async () => {
   try {
     const listUsers = await db.collection("participantsUOL").find().toArray();
     listUsers.forEach((value) => {
@@ -249,13 +249,13 @@ setInterval(async () => {
         const responseMessage = db
           .collection("messagesUOL")
           .insertOne(bodyMessage);
-        console.log(value.name, "excluido");
       }
     });
   } catch (error) {
     console.log(error);
   }
-}, 15000);
+}, 15000);*/
+}
 
 app.listen(5000, () => {
   console.log("Server is listening on port 5000");
