@@ -157,10 +157,10 @@ app.get("/messages", async (req, res) => {
         return false;
       });
       if (!limit) {
-        res.send(responseFilter.reverse());
+        res.send(responseFilter);
         return;
       } else {
-        res.send(responseFilter.reverse().splice(0, limit));
+        res.send(responseFilter.splice(-limit));
         return;
       }
     } else {
